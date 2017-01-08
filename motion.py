@@ -9,11 +9,17 @@ class Motion(object):
 
     @cherrypy.expose
     def index(self):
-        return "Available commands: start | stop"
+        index = "Motion is:"
+        if self.is_running():
+            index = index + "RUNNING"
+        else:
+            index = index + "STOPPED"
+        index = index + "\nAvailable commands: start | stop"
+        return index
     
     @cherrypy.expose
     def start(self):
-        if os.path.isfile(self.pid_file):
+        if self.is_running():
             return 'Motion already started'
         ret = call('motion')
         if ret:
@@ -22,7 +28,7 @@ class Motion(object):
 
     @cherrypy.expose
     def stop(self):
-        if not os.path.isfile(self.pid_file):
+        if not self.is_running():
             return 'Motion not started'
         with open(self.pid_file, 'r') as f:
             pid = int(f.readline ())
@@ -30,6 +36,9 @@ class Motion(object):
             os.kill(pid, signal.SIGTERM)
             return 'OK'
         return 'ERROR'
+
+    def is_running(self):
+        return os.path.isfile(self.pid_file)
 
 if __name__ == '__main__':
     cherrypy.config.update({'server.socket_host': '0.0.0.0','server.socket_port': 8000})
